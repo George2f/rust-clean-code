@@ -12,7 +12,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -22,13 +22,38 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
-      - name: Publish clean-code-lints
-        run: cargo publish -p clean-code-lints
+      - name: Create GitHub release from the changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node scripts/version.mjs)
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "release v$VERSION already exists; skipping"
+          else
+            node scripts/changelog-notes.mjs > /tmp/release-notes.md
+            gh release create "v$VERSION" --title "v$VERSION" --notes-file /tmp/release-notes.md
+          fi
+      - name: Publish clean-code-lints unless the version already exists
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          VERSION=$(node scripts/version.mjs)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -A "cargo-clean-code release" "https://crates.io/api/v1/crates/clean-code-lints/$VERSION")
+          if [ "$STATUS" = "200" ]; then
+            echo "clean-code-lints $VERSION already published; skipping"
+          else
+            cargo publish -p clean-code-lints
+          fi
       - name: Wait for the registry index
         run: sleep 30
-      - name: Publish cargo-clean-code
-        run: cargo publish -p cargo-clean-code
+      - name: Publish cargo-clean-code unless the version already exists
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          VERSION=$(node scripts/version.mjs)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -A "cargo-clean-code release" "https://crates.io/api/v1/crates/cargo-clean-code/$VERSION")
+          if [ "$STATUS" = "200" ]; then
+            echo "cargo-clean-code $VERSION already published; skipping"
+          else
+            cargo publish -p cargo-clean-code
+          fi
