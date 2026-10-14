@@ -1,31 +1,44 @@
 # clean-code-lints
 
 [![CI](https://github.com/george2f/rust-clean-code/actions/workflows/ci.yml/badge.svg)](https://github.com/george2f/rust-clean-code/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/clean-code-lints.svg)](https://crates.io/crates/clean-code-lints)
+[![crates.io (clean-code-lints)](https://img.shields.io/crates/v/clean-code-lints.svg)](https://crates.io/crates/clean-code-lints)
+[![crates.io (cargo-clean-code)](https://img.shields.io/crates/v/cargo-clean-code.svg)](https://crates.io/crates/cargo-clean-code)
 [![docs.rs](https://img.shields.io/docsrs/clean-code-lints)](https://docs.rs/clean-code-lints)
 [![license](https://img.shields.io/crates/l/clean-code-lints.svg)](LICENSE)
 
-Clean Code lints for Rust, derived from the
-[clean-code ESLint plugin](https://github.com/george2f/eslint-plugin-clean-code). All 44 rules —
-same names, same Clean Code identifiers, same 12 static / 32 heuristic split, same
-`recommended` / `strict` / `strictest` presets — implemented for Rust with [`syn`].
+Clean Code lints for Rust. **Lint your code just like uncle Bob taught you.**
 
-Runs on stable Rust. No compiler internals, no nightly, no `rustc_private`.
+Every rule maps to a numbered heuristic from [Clean Code](https://www.oreilly.com/library/view/clean-code-a/9780136083238/) by Robert C. Martin, so a lint report points straight back to the book. It is the Rust sibling of the [clean-code ESLint plugin](https://github.com/George2f/eslint-plugin-clean-code) — same 44 rules, same identifiers, same presets, no JavaScript in the middle.
+
+- 44 rules, one per book rule — 12 static, 32 heuristic
+- `recommended` / `strict` / `strictest` presets, every rule tunable in `clean-code.toml`
+- Stable Rust on a `syn`-based engine: no nightly, no compiler internals, no `rustc_private`
+- A `cargo clean-code` CLI for CI and pre-commit, and a `clean-code-lints` library for your tests
+
+## Why this exists
+
+I wrote the [ESLint plugin](https://github.com/George2f/eslint-plugin-clean-code) because I wanted to know what code looks like when Clean Code is actually enforced. The answer: hard for humans, trivial for agents. This is the Rust edition — same book, same rule numbers, same presets — so the agents writing your Rust can be exactly as annoyingly consistent as the ones writing your TypeScript. Point it at `strict`, or `strictest` if you are feeling brave.
+
+## Install
+
+```sh
+cargo install cargo-clean-code
+```
+
+The CLI is called `cargo-clean-code` so cargo can run it as a subcommand. Zero runtime dependencies beyond the AST crates — just stable Rust.
 
 ## Usage
 
 ```sh
-cargo install cargo-clean-code
 cargo clean-code                       # recommended preset, current directory
 cargo clean-code src tests --preset strict
 cargo clean-code --config clean-code.toml --fix
-cargo clean-code --format json | jq .  # machine-readable output
+cargo clean-code --format json          # machine-readable output
 ```
 
-Exit codes: `0` clean (or warnings only), `1` errors or files that failed to parse, `2` invalid
-configuration or flags.
+Exit codes: `0` clean (or warnings only), `1` errors or files that failed to parse, `2` invalid configuration or flags.
 
-Rules can be adjusted from the command line:
+Rules can be adjusted from the command line without touching the config:
 
 ```sh
 cargo clean-code --deny no-magic-numbers --allow law-of-demeter --warn no-todo-tests
@@ -33,7 +46,7 @@ cargo clean-code --deny no-magic-numbers --allow law-of-demeter --warn no-todo-t
 
 ## Configuration
 
-`clean-code.toml` in the project root is picked up automatically:
+Drop a `clean-code.toml` in the project root and it is picked up automatically:
 
 ```toml
 preset = "strict"          # recommended (default) | strict | strictest
@@ -56,9 +69,24 @@ level = "off"
 | `strict` | error | warn |
 | `strictest` | error | error |
 
+## For agents
+
+This tool was built to be driven by coding agents as much as by people:
+
+```sh
+cargo clean-code --preset strictest --format json .   # non-interactive, deterministic
+```
+
+- **Stable names**: rule ids and Clean Code references never change between releases; use them with `--allow`, `--warn`, `--deny` or in `clean-code.toml`.
+- **JSON output**: one object per finding — `file`, `rule`, `severity`, `message`, `help`, `line`, `column`, `endLine`, `endColumn`, `fixable`.
+- **Exit codes**: `0` clean, `1` findings or parse failures, `2` bad configuration — safe as a CI gate.
+- **Autofix**: `--fix` repairs the three mechanically safe rules (`no-negative-conditionals`, `no-dead-code`, `no-clutter`). Everything else ships a `help` string describing the intended fix.
+- **Rust semantics**: read [MAPPING.md](MAPPING.md) before "fixing" a finding — it documents how each rule applies to Rust and where the approximations are.
+- **Zero findings in tests**: depend on `clean-code-lints` and assert on a report (see [Library](#library)).
+
 ## Rules
 
-The full rule catalog with Rust-specific implementation notes lives in [MAPPING.md](MAPPING.md).
+The table below is the catalog; [MAPPING.md](MAPPING.md) documents the Rust semantics of every rule.
 
 | Rule | Clean Code | Tier | Fix |
 | --- | --- | --- | --- |
@@ -109,7 +137,7 @@ The full rule catalog with Rust-specific implementation notes lives in [MAPPING.
 
 ## Library
 
-The lint engine is also a library, useful in a project's own test suite:
+Prefer to keep the checker inside `cargo test`? The engine is a regular library:
 
 ```rust
 // Cargo.toml: clean-code-lints = "0.1"
@@ -122,10 +150,7 @@ assert!(report.is_clean(), "{:?}", report.diagnostics);
 
 ## Rust adaptations
 
-The ESLint plugin targets JavaScript/TypeScript; several rules are reinterpreted for Rust (for
-example `no-return-null` flags `Option<Vec<T>>` returns, `no-output-arguments` flags `&mut`
-parameters, `no-overridden-safeties` flags `#[allow]`/`unsafe`/`unwrap`). Every rule, its Rust
-semantics and its known approximations are documented in [MAPPING.md](MAPPING.md).
+The rule set started life as a JavaScript/TypeScript linter, so several rules are reinterpreted for Rust — `no-return-null` flags `Option<Vec<T>>` returns, `no-output-arguments` flags `&mut` parameters, `no-overridden-safeties` flags `#[allow]`/`unsafe`/`unwrap`. The full story is in [MAPPING.md](MAPPING.md).
 
 ## Development
 
@@ -136,8 +161,7 @@ cargo clippy --all-targets -- -D warnings
 cargo clean-code                                # the linter lints itself at strictest (clean-code.toml)
 ```
 
-The repository lints itself with every rule at error (`preset = "strictest"` in `clean-code.toml`,
-enforced in CI), the same self-linting discipline as the ESLint plugin.
+The repository lints itself with every rule at error (`preset = "strictest"` in `clean-code.toml`, enforced in CI) — the same self-linting discipline as the ESLint plugin.
 
 ## License
 
