@@ -140,7 +140,7 @@ The table below is the catalog; [MAPPING.md](MAPPING.md) documents the Rust sema
 Prefer to keep the checker inside `cargo test`? The engine is a regular library:
 
 ```rust
-// Cargo.toml: clean-code-lints = "0.1"
+// Cargo.toml: clean-code-lints = "0.2"
 let report = clean_code_lints::analyze_paths(
     &["src".into()],
     &clean_code_lints::Config::preset(clean_code_lints::Preset::Recommended),

@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.2.0] - 2026-10-15
+
+### Changed
+
+- Rewritten README: Clean Code tagline, install section, a section for coding agents (JSON
+  output, exit codes, autofix scope) and the rule table kept in place.
+
 ## [0.1.0] - 2026-10-15
 
 ### Added
