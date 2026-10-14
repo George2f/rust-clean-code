@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["crates/clean-code-lints", "crates/cargo-clean-code"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Juraj Pejnovic"]
+repository = "https://github.com/george2f/rust-clean-code"
+description = "Clean Code lints for Rust, derived from the clean-code ESLint plugin"
+
+[workspace.dependencies]
+syn = { version = "2", features = ["full", "visit"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+quote = "1"
+toml = "0.8"
+clap = { version = "4", features = ["derive"] }
+clean-code-lints = { path = "crates/clean-code-lints", version = "0.1.0" }

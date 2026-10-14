@@ -1,0 +1,19 @@
+[package]
+name = "cargo-clean-code"
+description = "Cargo subcommand that checks a Rust project with clean-code-lints"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
+keywords = ["cargo-subcommand", "clean-code", "lint"]
+categories = ["development-tools"]
+
+[[bin]]
+name = "cargo-clean-code"
+path = "src/main.rs"
+
+[dependencies]
+clean-code-lints.workspace = true
+clap.workspace = true

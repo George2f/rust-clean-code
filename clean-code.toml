@@ -1,0 +1,2 @@
+# The repository lints itself with every rule at error (see `.github/workflows/ci.yml`).
+preset = "strictest"
